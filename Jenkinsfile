@@ -6,7 +6,8 @@ pipeline {
         EC2_USER = 'ec2-user'                 // EC2 user (for Amazon Linux)
         EC2_IP = '3.144.226.43'               // Your EC2 instance's public IP
         DEPLOY_DIR = '/home/ec2-user/deploy'  // Deployment directory on the EC2 instance
-        GIT_REPO_URL = 'https://github.com/shruthick99/springboot.git'
+        GIT_REPO_URL = 'https://github.com/shruthick99/springboot.git' // Git repository URL
+    }
 
     stages {
         stage('Checkout') {
@@ -30,12 +31,4 @@ pipeline {
                     sh """
                         scp -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no target/your-app.jar ${EC2_USER}@${EC2_IP}:${DEPLOY_DIR}
                     """
-                    // Run the application on EC2
-                    sh """
-                        ssh -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} 'java -jar ${DEPLOY_DIR}/your-app.jar'
-                    """
-                }
-            }
-        }
-    }
-}
+            
