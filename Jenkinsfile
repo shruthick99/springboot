@@ -5,7 +5,7 @@ pipeline {
         // Define environment variables here
         EC2_PRIVATE_KEY_PATH = "/var/lib/jenkins/.ssh/jenkins.pem"  // Path to your EC2 private key
         EC2_USER = "ec2-user"  // EC2 user
-        EC2_HOST = "3.145.195.58"  // EC2 instance IP address
+        EC2_HOST = "3.15.162.56"  // EC2 instance IP address
         APP_NAME = "demo"  // Application name
         TARGET_PORT = "8081"  // Target port for your Spring Boot app
     }
