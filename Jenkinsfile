@@ -1,54 +1,41 @@
 pipeline {
     agent any
-    
+
     environment {
-        // Define environment variables
-        REPO_URL = 'https://github.com/shruthick99/springboot.git'  // Replace with your GitHub repo URL
-        BRANCH = 'main'  // Replace with the branch you want to deploy from
-        EC2_USER = 'ec2-user'  // The SSH user for your EC2 instance
-        EC2_HOST = '3.144.226.43'  // Replace with your EC2 public IP or DNS
-        SSH_KEY_ID = '7551dc5b-481f-442c-987b-c190316488ce'  // The ID of the SSH key in Jenkins credentials
-    }
+        EC2_KEY_PATH = "~/.ssh/jenkins.pem"   // Path to your PEM file
+        EC2_USER = 'ec2-user'                 // EC2 user (for Amazon Linux)
+        EC2_IP = '3.144.226.43'               // Your EC2 instance's public IP
+        DEPLOY_DIR = '/home/ec2-user/deploy'  // Deployment directory on the EC2 instance
+        GIT_REPO_URL = 'https://github.com/shruthick99/springboot.git'
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                // Clone the repository from GitHub
-                git branch: "${BRANCH}", url: "${REPO_URL}"
+                // Clone the repository from the Git URL
+                git branch: 'main', url: "${GIT_REPO_URL}"
             }
         }
 
-        stage('Build Spring Boot Application') {
+        stage('Build') {
             steps {
-                script {
-                    // Install dependencies and build the Spring Boot application
-                    sh './mvnw clean package -DskipTests'
-                }
+                // Build the project (adjust according to your build tool)
+                sh './mvnw clean install'  // Assuming you're using Maven; adjust for your build tool
             }
         }
 
         stage('Deploy to EC2') {
             steps {
                 script {
-                    // Use SSH to copy the jar file to the EC2 instance and run it
-                    sshagent(credentials: [SSH_KEY_ID]) {
-                        // Copy the generated jar to EC2 instance
-                        sh "scp -o StrictHostKeyChecking=no target/your-app.jar ${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/"
-
-                        // SSH into the EC2 instance and run the Spring Boot application
-                        sh "ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} 'nohup java -jar /home/${EC2_USER}/your-app.jar &'"
-                    }
+                    // Copy the built artifact to the EC2 instance
+                    sh """
+                        scp -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no target/your-app.jar ${EC2_USER}@${EC2_IP}:${DEPLOY_DIR}
+                    """
+                    // Run the application on EC2
+                    sh """
+                        ssh -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} 'java -jar ${DEPLOY_DIR}/your-app.jar'
+                    """
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Deployment successful!'
-        }
-        failure {
-            echo 'Deployment failed!'
         }
     }
 }
