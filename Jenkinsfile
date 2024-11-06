@@ -7,7 +7,7 @@ pipeline {
         APP_JAR = 'target/${demo}-0.0.1-SNAPSHOT.jar' // Update this with your actual JAR naming convention
         EC2_USER = 'ec2-user' // Your EC2 instance's SSH username (could be ec2-user, ubuntu, etc.)
         EC2_HOST = '3.140.250.106' // Public IP or DNS of your EC2 instance
-        EC2_PRIVATE_KEY_PATH = 'var/lib/jenkins/.ssh/jenkins.pem' // Path to your private key
+        EC2_PRIVATE_KEY_PATH = '/var/lib/jenkins/.ssh/jenkins.pem' // Path to your private key
         TARGET_PORT = '8081' // Desired port for Spring Boot app
     }
 
