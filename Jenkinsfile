@@ -31,4 +31,12 @@ pipeline {
                     sh """
                         scp -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no target/your-app.jar ${EC2_USER}@${EC2_IP}:${DEPLOY_DIR}
                     """
-            
+                    // Run the application on EC2
+                    sh """
+                        ssh -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} 'java -jar ${DEPLOY_DIR}/your-app.jar'
+                    """
+                }
+            }
+        }
+    }
+}
