@@ -1,26 +1,26 @@
 pipeline {
     agent any
-    
+
     environment {
-        // Define environment variables here
-        EC2_PRIVATE_KEY_PATH = "/var/lib/jenkins/.ssh/jenkins.pem"  // Path to your EC2 private key
-        EC2_USER = "ec2-user"  // EC2 user
-        EC2_HOST = "3.140.250.106"  // EC2 instance IP address
-        APP_NAME = "spring-boot-hello-world"  // Application name
-        TARGET_PORT = "8081"  // Target port for your Spring Boot app
+        REPO_URL = 'https://github.com/shruthick99/springboot.git' // Replace with your GitHub repo URL
+        APP_NAME = 'spring-boot-hello-world'
+        APP_JAR = 'target/${APP_NAME}-0.0.1-SNAPSHOT.jar' // Update this with your actual JAR naming convention
+        EC2_USER = 'ec2-user' // Your EC2 instance's SSH username
+        EC2_HOST = '3.140.250.106' // Public IP or DNS of your EC2 instance
+        EC2_PRIVATE_KEY_PATH = '/var/lib/jenkins/.ssh/jenkins.pem' // Correct path to your private key
+        TARGET_PORT = '8081' // Desired port for Spring Boot app
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                // Checkout the code from Git repository
-                git 'https://github.com/shruthick99/springboot.git'
+                git url: "${REPO_URL}", branch: 'main' // Specify your branch
             }
         }
 
         stage('Build with Maven') {
             steps {
-                // Clean and build the Spring Boot application
+                // Run Maven to build the application
                 sh 'mvn clean package'
             }
         }
@@ -36,8 +36,8 @@ pipeline {
                     sh """
                     ssh -o StrictHostKeyChecking=no -i ${EC2_PRIVATE_KEY_PATH} ${EC2_USER}@${EC2_HOST} '
                         # Stop existing application if running
-                        sudo pkill -f spring-boot-hello-world || true
-
+                        pkill -f ${APP_NAME} || true
+                        
                         # Copy the built JAR to EC2 (using SCP)
                         scp -i ${EC2_PRIVATE_KEY_PATH} target/${APP_NAME}-0.0.1-SNAPSHOT.jar ${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/${APP_NAME}.jar
 
@@ -52,11 +52,13 @@ pipeline {
 
     post {
         always {
-            echo "Deployment finished."
+            echo 'Deployment finished.'
         }
-
+        success {
+            echo 'Build and deployment succeeded!'
+        }
         failure {
-            echo "Build or deployment failed!"
+            echo 'Build or deployment failed!'
         }
     }
 }
