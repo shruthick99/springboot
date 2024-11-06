@@ -4,10 +4,10 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/shruthick99/springboot.git' // Replace with your GitHub repo URL
         APP_NAME = 'spring-boot-hello-world'
-        APP_JAR = 'target/${demo}-0.0.1-SNAPSHOT.jar' // Update this with your actual JAR naming convention
-        EC2_USER = 'ec2-user' // Your EC2 instance's SSH username (could be ec2-user, ubuntu, etc.)
+        APP_JAR = 'target/${APP_NAME}-0.0.1-SNAPSHOT.jar' // Update this with your actual JAR naming convention
+        EC2_USER = 'ec2-user' // Your EC2 instance's SSH username
         EC2_HOST = '3.140.250.106' // Public IP or DNS of your EC2 instance
-        EC2_PRIVATE_KEY_PATH = '/var/lib/jenkins/.ssh/jenkins.pem' // Path to your private key
+        EC2_PRIVATE_KEY_PATH = '/var/lib/jenkins/.ssh/jenkins.pem' // Correct path to your private key
         TARGET_PORT = '8081' // Desired port for Spring Boot app
     }
 
@@ -29,7 +29,7 @@ pipeline {
             steps {
                 script {
                     // Update the Spring Boot application's application.properties or application.yml
-                    // to use port 8082
+                    // to use the desired port
                     sh "echo 'server.port=${TARGET_PORT}' >> src/main/resources/application.properties"
 
                     // SSH into EC2 and deploy
@@ -41,7 +41,7 @@ pipeline {
                         # Copy the built JAR to EC2 (using SCP)
                         scp -i ${EC2_PRIVATE_KEY_PATH} target/${APP_NAME}-0.0.1-SNAPSHOT.jar ${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/${APP_NAME}.jar
 
-                        # Start the Spring Boot app on port 8082
+                        # Start the Spring Boot app on the specified port
                         nohup java -jar /home/${EC2_USER}/${APP_NAME}.jar > /home/${EC2_USER}/app.log 2>&1 &
                     '
                     """
