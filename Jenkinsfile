@@ -5,8 +5,8 @@ pipeline {
         // Define environment variables here
         EC2_PRIVATE_KEY_PATH = "/var/lib/jenkins/.ssh/jenkins.pem"  // Path to your EC2 private key
         EC2_USER = "ec2-user"  // EC2 user
-        EC2_HOST = "3.140.250.106"  // EC2 instance IP address
-        APP_NAME = "spring-boot-hello-world"  // Application name
+        EC2_HOST = "3.145.195.58"  // EC2 instance IP address
+        APP_NAME = "demo"  // Application name
         TARGET_PORT = "8081"  // Target port for your Spring Boot app
     }
 
@@ -36,7 +36,7 @@ pipeline {
                     sh """
                     ssh -o StrictHostKeyChecking=no -i ${EC2_PRIVATE_KEY_PATH} ${EC2_USER}@${EC2_HOST} '
                         # Stop existing application if running
-                        sudo pkill -f spring-boot-hello-world || true
+                        sudo pkill -f demo || true
 
                         # Copy the built JAR to EC2 (using SCP)
                         scp -i ${EC2_PRIVATE_KEY_PATH} target/${APP_NAME}-0.0.1-SNAPSHOT.jar ${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/${APP_NAME}.jar
