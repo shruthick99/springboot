@@ -14,7 +14,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the code from Git repository
-                git 'https://github.com/shruthick99/springboot.git'
+                git branch: 'main', url: 'https://github.com/shruthick99/springboot.git'
             }
         }
 
