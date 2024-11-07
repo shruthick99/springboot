@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        HEROKU_API_KEY = credentials('heroku-api-key')  // Ensure you have a Heroku API key in Jenkins credentials
+        HEROKU_API_KEY = credentials('heroku-api-key')  // Ensure you have the Heroku API key stored in Jenkins credentials
     }
 
     stages {
