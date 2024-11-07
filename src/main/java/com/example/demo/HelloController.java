@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HelloController {  // Class name should match the file name
 
-    @GetMapping("/hello")
+    // Map to root URL ("/") instead of "/hello"
+    @GetMapping("/")
     public String sayHello() {
         return "Hello, World!";
     }
