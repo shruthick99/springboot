@@ -2,39 +2,32 @@ pipeline {
     agent any
 
     environment {
-        EC2_KEY_PATH = "~/.ssh/jenkins.pem"   // Path to your PEM file
-        EC2_USER = 'ec2-user'                 // EC2 user (for Amazon Linux)
-        EC2_IP = '3.144.226.43'               // Your EC2 instance's public IP
-        DEPLOY_DIR = '/home/ec2-user/deploy'  // Deployment directory on the EC2 instance
-        GIT_REPO_URL = 'https://github.com/shruthick99/springboot.git' // Git repository URL
+        HEROKU_API_KEY = credentials('heroku-api-key')  // Use Jenkins secret for Heroku API key
+        HEROKU_APP_NAME = 'springboot-demo-app'         // Replace with your Heroku app name
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Clone the repository from the Git URL
-                git branch: 'main', url: "${GIT_REPO_URL}"
+                git 'https://github.com/shruthick99/springboot.git'
             }
         }
 
         stage('Build') {
             steps {
-                // Build the project (adjust according to your build tool)
-                sh './mvnw clean install'  // Assuming you're using Maven; adjust for your build tool
+                sh './mvnw clean install'
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to Heroku') {
             steps {
                 script {
-                    // Copy the built artifact to the EC2 instance
-                    sh """
-                        scp -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no target/your-app.jar ${EC2_USER}@${EC2_IP}:${DEPLOY_DIR}
-                    """
-                    // Run the application on EC2
-                    sh """
-                        ssh -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} 'java -jar ${DEPLOY_DIR}/your-app.jar'
-                    """
+                    // Login to Heroku CLI using the API key
+                    sh 'echo $HEROKU_API_KEY | heroku auth:token'
+
+                    // Deploy the app to Heroku
+                    sh 'git remote add heroku https://git.heroku.com/$HEROKU_APP_NAME.git'
+                    sh 'git push heroku main'
                 }
             }
         }
