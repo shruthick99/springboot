@@ -32,8 +32,8 @@ pipeline {
                     # Remove the existing Heroku remote if it exists
                     git remote remove heroku || true
 
-                    # Add the Heroku remote again
-                    git remote add heroku https://git.heroku.com/springboot-demo-app.git  // Replace with your app name
+                    # Add the Heroku remote again (without the comment)
+                    git remote add heroku https://git.heroku.com/springboot-demo-app.git
 
                     # Deploy to Heroku (using master instead of main)
                     git push heroku master
