@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        HEROKU_API_KEY = credentials('heroku-api-key')  // Use Jenkins secret for Heroku API key
-        HEROKU_APP_NAME = 'springboot-demo-app'         // Replace with your Heroku app name
+        HEROKU_API_KEY = credentials('heroku-api-key')  // Fetch Heroku API key from Jenkins credentials store
+        HEROKU_APP_NAME = 'your-heroku-app-name'         // Replace with your Heroku app name
     }
 
     stages {
@@ -19,13 +19,22 @@ pipeline {
             }
         }
 
+        stage('Install Heroku CLI') {
+            steps {
+                script {
+                    // Install Heroku CLI if it's not already installed
+                    sh 'curl https://cli-assets.heroku.com/install.sh | sh'
+                }
+            }
+        }
+
         stage('Deploy to Heroku') {
             steps {
                 script {
-                    // Login to Heroku CLI using the API key
+                    // Authenticate with Heroku using the API key
                     sh 'echo $HEROKU_API_KEY | heroku auth:token'
 
-                    // Deploy the app to Heroku
+                    // Add Heroku remote and push code to Heroku
                     sh 'git remote add heroku https://git.heroku.com/$HEROKU_APP_NAME.git'
                     sh 'git push heroku main'
                 }
