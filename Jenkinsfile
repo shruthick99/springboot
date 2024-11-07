@@ -2,9 +2,7 @@ pipeline {
     agent any
 
     environment {
-        HEROKU_API_KEY = credentials('heroku-api-key')  // Fetch Heroku API key from Jenkins credentials store
-        HEROKU_APP_NAME = 'springboot-demo-app'         // Replace with your Heroku app name
-        HEROKU_PATH = '/opt/homebrew/bin'                 // Path where Heroku CLI is installed
+        HEROKU_API_KEY = credentials('heroku-api-key')  // Ensure you have a Heroku API key in Jenkins credentials
     }
 
     stages {
@@ -16,23 +14,41 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh './mvnw clean install'
+                script {
+                    // Run Maven build (clean install)
+                    sh './mvnw clean install'
+                }
             }
         }
 
         stage('Deploy to Heroku') {
             steps {
                 script {
-                    // Add Heroku CLI path to the system PATH
+                    // Ensure the Heroku CLI is in the PATH
                     sh '''
-                    export PATH=$PATH:$HEROKU_PATH
+                    export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:$PATH
                     echo "Using Heroku CLI at: $(which heroku)"
-                    heroku auth:token
-                    git remote add heroku https://git.heroku.com/$HEROKU_APP_NAME.git
+
+                    # Remove the existing Heroku remote if it exists
+                    git remote remove heroku || true
+
+                    # Add the Heroku remote again
+                    git remote add heroku https://git.heroku.com/springboot-demo-app.git
+
+                    # Deploy to Heroku
                     git push heroku main
                     '''
                 }
             }
+        }
+    }
+    
+    post {
+        success {
+            echo "Deployment to Heroku was successful!"
+        }
+        failure {
+            echo "Deployment to Heroku failed."
         }
     }
 }
