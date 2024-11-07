@@ -2,42 +2,53 @@ pipeline {
     agent any
 
     environment {
-        EC2_KEY_PATH = "~/.ssh/jenkins.pem"   // Path to your PEM file
-        EC2_USER = 'ec2-user'                 // EC2 user (for Amazon Linux)
-        EC2_IP = '3.144.226.43'               // Your EC2 instance's public IP
-        DEPLOY_DIR = '/home/ec2-user/deploy'  // Deployment directory on the EC2 instance
-        GIT_REPO_URL = 'git@github.com:shruthick99/springboot.git' // Git repository URL
-        GIT_CREDENTIALS = 'github-ssh-key' // Reference to the SSH credentials you created in Jenkins
+        HEROKU_API_KEY = credentials('heroku-api-key')  // Ensure you have a Heroku API key in Jenkins credentials
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout code using SSH credentials
-                git credentialsId: "${GIT_CREDENTIALS}", url: "${GIT_REPO_URL}"
+                git 'https://github.com/shruthick99/springboot.git'
             }
         }
 
         stage('Build') {
             steps {
-                // Build the project (adjust according to your build tool)
-                sh './mvnw clean install'  // Assuming you're using Maven; adjust for your build tool
+                script {
+                    // Run Maven build (clean install)
+                    sh './mvnw clean install'
+                }
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to Heroku') {
             steps {
                 script {
-                    // Copy the built artifact to the EC2 instance
-                    sh """
-                        scp -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no target/your-app.jar ${EC2_USER}@${EC2_IP}:${DEPLOY_DIR}
-                    """
-                    // Run the application on EC2
-                    sh """
-                        ssh -i ${EC2_KEY_PATH} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} 'java -jar ${DEPLOY_DIR}/your-app.jar'
-                    """
+                    // Ensure the Heroku CLI is in the PATH
+                    sh '''
+                    export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:$PATH
+                    echo "Using Heroku CLI at: $(which heroku)"
+
+                    # Remove the existing Heroku remote if it exists
+                    git remote remove heroku || true
+
+                    # Add the Heroku remote again
+                    git remote add heroku https://git.heroku.com/springboot-demo-app.git  // Replace with your app name
+
+                    # Deploy to Heroku (using master instead of main)
+                    git push heroku master
+                    '''
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment to Heroku was successful!"
+        }
+        failure {
+            echo "Deployment to Heroku failed."
         }
     }
 }
