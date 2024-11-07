@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     // Use the SSH private key stored in Jenkins credentials store
-                    withCredentials([sshUserPrivateKey(credentialsId: 'my-ec2-ssh-key', keyFileVariable: 'SSH_KEY_PATH', usernameVariable: 'SSH_USER')]) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'ba61a69e-415e-4257-a8d5-a4d639e9841c', keyFileVariable: 'SSH_KEY_PATH', usernameVariable: 'SSH_USER')]) {
                         // SCP the JAR file to the EC2 instance
                         sh """
                         scp -i ${SSH_KEY_PATH} target/${JAR_NAME} ${SSH_USER}@${EC2_IP}:${PROJECT_DIR}
