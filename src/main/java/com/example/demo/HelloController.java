@@ -1,11 +1,10 @@
 package com.example.demo;
 
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class hello {
+public class HelloController {  // Class name should match the file name
 
     @GetMapping("/hello")
     public String sayHello() {
