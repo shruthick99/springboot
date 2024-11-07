@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         HEROKU_API_KEY = credentials('heroku-api-key')  // Fetch Heroku API key from Jenkins credentials store
-        HEROKU_APP_NAME = 'your-heroku-app-name'         // Replace with your Heroku app name
+        HEROKU_APP_NAME = 'springboot-demo-app'         // Replace with your Heroku app name
         HEROKU_PATH = '/opt/homebrew/bin'                 // Path where Heroku CLI is installed
     }
 
