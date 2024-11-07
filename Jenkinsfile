@@ -30,14 +30,15 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 script {
-                    // Use withCredentials to inject SSH private key
+                    // Use withCredentials to inject SSH private key securely
                     withCredentials([sshUserPrivateKey(credentialsId: 'ba61a69e-415e-4257-a8d5-a4d639e9841c', keyFileVariable: 'SSH_KEY_PATH', usernameVariable: 'EC2_USER')]) {
-                        // Use SCP to copy the JAR file to EC2
+                        
+                        // SCP to copy the JAR file from Jenkins workspace to EC2
                         sh """
                         scp -i \$SSH_KEY_PATH target/${JAR_NAME} \$EC2_USER@${EC2_IP}:${PROJECT_DIR}
                         """
-
-                        // SSH into the EC2 instance and run the JAR
+                        
+                        // SSH into EC2 to run the JAR file
                         sh """
                         ssh -i \$SSH_KEY_PATH \$EC2_USER@${EC2_IP} 'nohup java -jar ${PROJECT_DIR}/${JAR_NAME} > /dev/null 2>&1 &'
                         """
