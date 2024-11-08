@@ -19,7 +19,7 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Docker Image (on Jenkins local)') {
             steps {
                 script {
                     // Build the Docker image using the Dockerfile
