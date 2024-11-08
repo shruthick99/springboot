@@ -2,87 +2,68 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = "docker.io"
-        DOCKER_IMAGE_NAME = "shruthick99/springboot"
-        DOCKER_TAG = "v1.0.0"
+        DOCKER_IMAGE_NAME = "shruthick99/springboot:v1.0.0"
+        CONTAINER_NAME = "springboot"
+        DOCKERHUB_CREDENTIALS = "dockerhub-creds" // This is the ID of your credentials
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                // Checkout the code from your GitHub repo
-                git 'https://github.com/shruthick99/springboot.git'
-            }
-        }
-
-        stage('List Files') {
-            steps {
-                // List files in the current directory to check if Dockerfile exists
-                sh 'pwd'
-                sh 'ls -l'
-            }
-        }
-
-        stage('Build Spring Boot Application') {
-            steps {
-                // Build the Spring Boot app using Maven
-                // This step will create the target directory and the JAR file
-                sh 'mvn clean install -DskipTests'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    // Build Docker image from the Dockerfile
-                    // Make sure the path to the Dockerfile is correct
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
-                }
+                checkout scm
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
                 script {
-                    // Login to Docker Hub using credentials
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                    // Use the credentials stored in Jenkins
+                    withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        // Login to Docker Hub using the credentials
+                        sh "docker login -u $DOCKER_USER -p $DOCKER_PASS"
                     }
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Pull Docker Image') {
             steps {
                 script {
-                    // Push the built Docker image to Docker Hub
-                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                    // Pull the Docker image from Docker Hub
+                    sh "docker pull ${DOCKER_IMAGE_NAME}"
                 }
             }
         }
 
-        stage('Cleanup') {
+        stage('Stop and Remove Old Container') {
             steps {
                 script {
-                    // Optionally remove the local Docker image
-                    sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                    sh '''
+                        docker ps -q --filter "name=${CONTAINER_NAME}" | xargs -r docker stop
+                        docker ps -a -q --filter "name=${CONTAINER_NAME}" | xargs -r docker rm
+                    '''
                 }
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                script {
+                    sh "docker run -d -p 8080:8080 --name ${CONTAINER_NAME} ${DOCKER_IMAGE_NAME}"
+                }
+            }
+        }
+        
+        stage('Post Actions') {
+            steps {
+                echo "Deployment completed successfully."
             }
         }
     }
 
     post {
-        always {
-            // Clean up Docker Hub login session
-            sh "docker logout"
-        }
-
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-
         failure {
-            echo 'Pipeline failed!'
+            echo "Pipeline failed. Please check the logs for details."
         }
     }
 }
