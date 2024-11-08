@@ -2,55 +2,71 @@ pipeline {
     agent any
 
     environment {
-        EC2_IP = "18.220.197.208"  // Your EC2 instance public IP address
-        SSH_KEY_PATH = "~/.ssh/jenkins.pem"  // Path to your EC2 private key for SSH
-        PROJECT_DIR = "/home/ec2-user"  // Directory on EC2 instance where the JAR will be deployed
-        JAR_NAME = "demo-0.0.1-SNAPSHOT.jar"  // Update with the actual JAR name if needed
-        GIT_BRANCH = "master"  // Using the master branch
+        // DockerHub credentials stored in Jenkins (e.g., username and password/token)
+        DOCKER_REGISTRY = "docker.io"
+        DOCKER_IMAGE_NAME = "shruthick99/springboot"  // Replace with your Docker Hub repo name
+        DOCKER_TAG = "v1.0.0"  // You can update the version as per your need
     }
 
     stages {
-        stage('Clone GitHub Repository') {
+        stage('Checkout') {
+            steps {
+                // Checkout the code from your repository
+                git 'https://github.com/shruthick99/springboot.git'  // Replace with your Git repository URL
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // Clone the GitHub repository from the specified branch (master)
-                    git branch: "${GIT_BRANCH}", url: 'https://github.com/shruthick99/springboot.git'
+                    // Build Docker image from the Dockerfile
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
         }
 
-        stage('Build with Maven') {
+        stage('Login to Docker Hub') {
             steps {
                 script {
-                    // Build the project using Maven
-                    sh './mvnw clean install -DskipTests'
+                    // Login to Docker Hub using credentials stored in Jenkins
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                    }
                 }
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    // Use SCP to copy the JAR file from Jenkins to EC2
-                    sh """
-                    scp -i ${SSH_KEY_PATH} target/${JAR_NAME} ec2-user@${EC2_IP}:${PROJECT_DIR}
-                    """
+                    // Push Docker image to Docker Hub
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                }
+            }
+        }
 
-                    // SSH into the EC2 instance and run the JAR
-                    sh """
-                    ssh -i ${SSH_KEY_PATH} ec2-user@${EC2_IP} 'nohup java -jar ${PROJECT_DIR}/${JAR_NAME} > /dev/null 2>&1 &'
-                    """
+        stage('Cleanup') {
+            steps {
+                script {
+                    // Optionally clean up local Docker images to free up space
+                    sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Deployment to EC2 was successful!'
+        always {
+            // Clean up Docker Hub login session
+            sh "docker logout"
         }
+
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
         failure {
-            echo 'Deployment failed.'
+            echo 'Pipeline failed!'
         }
     }
-} 
+}
