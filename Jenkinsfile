@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'shruthick99/my-spring-boot-app'  // Use your Docker Hub username
+        DOCKER_IMAGE = 'shruthick99/my-spring-boot-app'
         DOCKER_TAG = 'latest'
         DOCKER_REGISTRY = 'docker.io'
+        EC2_PUBLIC_IP = '34.213.22.11'  // Replace with your EC2's public IP
     }
 
     stages {
@@ -43,7 +44,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@your-ec2-public-ip \\
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} \\
                         'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} && \\
                         docker stop spring-boot-app || true && \\
                         docker rm spring-boot-app || true && \\
