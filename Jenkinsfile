@@ -2,17 +2,24 @@ pipeline {
     agent any
 
     environment {
-        // DockerHub credentials stored in Jenkins (e.g., username and password/token)
         DOCKER_REGISTRY = "docker.io"
-        DOCKER_IMAGE_NAME = "shruthick99/springboot"  // Replace with your Docker Hub repo name
-        DOCKER_TAG = "v1.0.0"  // You can update the version as per your need
+        DOCKER_IMAGE_NAME = "shruthick99/springboot"
+        DOCKER_TAG = "v1.0.0"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from your repository
-                git 'https://github.com/shruthick99/springboot.git'  // Replace with your Git repository URL
+                // Checkout the code from your GitHub repo
+                git 'https://github.com/shruthick99/springboot.git'
+            }
+        }
+
+        stage('List Files') {
+            steps {
+                // List files in the current directory to check if Dockerfile exists
+                sh 'pwd'
+                sh 'ls -l'
             }
         }
 
@@ -20,6 +27,7 @@ pipeline {
             steps {
                 script {
                     // Build Docker image from the Dockerfile
+                    // Update the path if the Dockerfile is in a subdirectory like docker/
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
@@ -28,7 +36,7 @@ pipeline {
         stage('Login to Docker Hub') {
             steps {
                 script {
-                    // Login to Docker Hub using credentials stored in Jenkins
+                    // Login to Docker Hub using credentials
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
                     }
@@ -39,7 +47,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    // Push Docker image to Docker Hub
+                    // Push the built Docker image to Docker Hub
                     sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
@@ -48,7 +56,7 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    // Optionally clean up local Docker images to free up space
+                    // Optionally remove the local Docker image
                     sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
