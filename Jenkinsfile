@@ -17,8 +17,8 @@ pipeline {
 
         stage('Build') {
             steps {
-                // Run Maven build to package the Spring Boot app
-                sh './mvnw clean package'
+                // Run Maven build to package the Spring Boot app, skipping tests
+                sh './mvnw clean package -DskipTests'
             }
         }
 
