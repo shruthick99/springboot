@@ -52,16 +52,14 @@ pipeline {
 
                             # SSH into EC2 and perform the actions
                             ssh -i \$SSH_KEY $EC2_INSTANCE '
-                                # Pull the latest Docker image
+                                # Stop and remove any existing container
+                                docker stop my-spring-boot-app || true && \
+                                docker rm my-spring-boot-app || true && \
+                                
+                                # Pull the latest Docker image from Docker Hub
                                 docker pull $DOCKER_IMAGE && \
 
-                                # Stop the existing container (if running)
-                                docker stop my-spring-boot-app || true && \
-
-                                # Remove the old container (if exists)
-                                docker rm my-spring-boot-app || true && \
-
-                                # Run the new Docker container
+                                # Run the Docker container on EC2
                                 docker run -d --name my-spring-boot-app -p 8081:8081 $DOCKER_IMAGE
                             '
                         """
