@@ -50,10 +50,11 @@ pipeline {
                 script {
                     // SSH into EC2 instance and pull the latest image, then run it
                     sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@your-ec2-public-ip \\
-                        'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} && \\
-                        docker stop spring-boot-app || true && \\
-                        docker rm spring-boot-app || true && \\
+                        ssh -o StrictHostKeyChecking=no ec2-user@your-ec2-public-ip ' \
+                        docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} && \
+                        docker ps -q -f name=spring-boot-app && \
+                        docker stop spring-boot-app && \
+                        docker rm spring-boot-app || true && \
                         docker run -d --name spring-boot-app -p 8081:8081 ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}'
                     """
                 }
