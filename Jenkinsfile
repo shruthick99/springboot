@@ -2,25 +2,45 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'shruthick99/spring-boot-app:latest'
-        EC2_HOST = '52.15.191.224'  // Replace with your EC2 IP
+        DOCKER_IMAGE = 'my-spring-boot-app'  // Name for the Docker image
+        DOCKER_TAG = 'latest'               // Tag for the image
+        DOCKER_REGISTRY = 'docker.io'       // Docker registry (e.g., Docker Hub)
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the code from the 'master' branch of your repository
+                git branch: 'master', url: 'https://github.com/shruthick99/springboot.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Run Maven build to package the Spring Boot app
+                sh './mvnw clean package'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
                     // Build Docker image
-                    sh 'docker build -t $DOCKER_IMAGE .'
+                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} ."
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push to Docker Registry') {
             steps {
                 script {
-                    // Push Docker image to Docker Hub
-                    sh 'docker push $DOCKER_IMAGE'
+                    // Log in to Docker Hub (you can also use AWS ECR or other registry)
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                    }
+
+                    // Push the Docker image to the registry
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
                 }
             }
         }
@@ -28,15 +48,14 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 script {
-                    // Pull Docker image and run on EC2 using PEM from Jenkins Credentials
-                    withCredentials([file(credentialsId: 'ec2-pem', variable: 'PEM_FILE')]) {
-                        sh """
-                            ssh -i \$PEM_FILE -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'EOF'
-                            docker pull $DOCKER_IMAGE
-                            docker run -d -p 8081:8080 $DOCKER_IMAGE
-                            EOF
-                        """
-                    }
+                    // SSH into EC2 instance and pull the latest image, then run it
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@your-ec2-public-ip \\
+                        'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} && \\
+                        docker stop spring-boot-app || true && \\
+                        docker rm spring-boot-app || true && \\
+                        docker run -d --name spring-boot-app -p 8081:8081 ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}'
+                    """
                 }
             }
         }
