@@ -3,7 +3,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'shruthick99/springboot:v1.0.0'
         DOCKER_USERNAME = 'shruthick99'
-        DOCKER_PASSWORD = ''
+        DOCKER_PASSWORD = 'Dockerhub@123'
     }
     stages {
         stage('Checkout SCM') {
