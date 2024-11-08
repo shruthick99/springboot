@@ -50,7 +50,7 @@ pipeline {
                             docker ps -q --filter "name=spring-boot-app" | xargs -r docker stop && \
                             docker ps -a -q --filter "name=spring-boot-app" | xargs -r docker rm && \
                             docker run -d --name spring-boot-app -p 8081:8081 ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} '
-                        '
+                        """
                     }
                 }
             }
