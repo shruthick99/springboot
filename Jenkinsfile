@@ -1,59 +1,67 @@
 pipeline {
     agent any
+
     environment {
-        DOCKER_IMAGE = 'shruthick99/springboot:v1.0.0'
-        DOCKER_USERNAME = 'shruthick99'
-        DOCKER_PASSWORD = 'Dockerhub@123'
+        DOCKER_HUB_CREDENTIALS = 'dockerhub-creds'  // The ID of your Docker Hub credentials in Jenkins
+        IMAGE_NAME = 'shruthick99/springboot'       // Docker image name
+        IMAGE_TAG = 'v1.0.1'                        // The new tag for your image
     }
+
     stages {
         stage('Checkout SCM') {
             steps {
+                // Checkout your Git repository
                 checkout scm
             }
         }
-        
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build Docker image with the new tag
+                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                }
+            }
+        }
+
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    script {
-                        // Docker login using credentials stored in Jenkins
+                script {
+                    // Docker login using credentials stored in Jenkins
+                    withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
                     }
                 }
             }
         }
-        
-        stage('Pull Docker Image') {
+
+        stage('Push Docker Image') {
             steps {
                 script {
-                    // Pull the Docker image from Docker Hub
-                    sh "docker pull ${DOCKER_IMAGE}"
+                    // Push the Docker image to Docker Hub
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
         }
-        
-        stage('Stop and Remove Old Container') {
+
+        stage('Deploy on EC2') {
             steps {
                 script {
-                    // Stop and remove any existing Docker container named "springboot"
-                    sh "docker ps -q --filter name=springboot | xargs -r docker stop"
-                    sh "docker ps -a -q --filter name=springboot | xargs -r docker rm"
-                }
-            }
-        }
-        
-        stage('Run Docker Container on EC2') {
-            steps {
-                script {
-                    // Run the Docker container on EC2, mapping external port 8081 to internal port 8080
-                    sh "docker run -d -p 8081:8080 --name springboot ${DOCKER_IMAGE}"
+                    // Run Docker commands directly on the EC2 instance (Jenkins is already running on EC2)
+                    sh """
+                    docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker stop springboot || true
+                    docker rm springboot || true
+                    docker run -d -p 8081:8081 --name springboot ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
                 }
             }
         }
     }
+
     post {
-        always {
-            echo 'Pipeline finished.'
+        success {
+            echo 'Pipeline completed successfully!'
         }
         failure {
             echo 'Pipeline failed. Please check the logs.'
