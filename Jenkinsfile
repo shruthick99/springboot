@@ -3,7 +3,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'shruthick99/springboot:v1.0.0'
         DOCKER_USERNAME = 'shruthick99'
-        DOCKER_PASSWORD = 'Dockerhub@123'
+        DOCKER_PASSWORD = ''
     }
     stages {
         stage('Checkout SCM') {
@@ -16,7 +16,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
-                        // Perform docker login using the provided credentials
+                        // Docker login using credentials stored in Jenkins
                         sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
                     }
                 }
@@ -26,7 +26,7 @@ pipeline {
         stage('Pull Docker Image') {
             steps {
                 script {
-                    // Pull the specified Docker image from Docker Hub
+                    // Pull the Docker image from Docker Hub
                     sh "docker pull ${DOCKER_IMAGE}"
                 }
             }
@@ -35,17 +35,17 @@ pipeline {
         stage('Stop and Remove Old Container') {
             steps {
                 script {
-                    // Stop and remove any existing containers named 'springboot'
+                    // Stop and remove any existing Docker container named "springboot"
                     sh "docker ps -q --filter name=springboot | xargs -r docker stop"
                     sh "docker ps -a -q --filter name=springboot | xargs -r docker rm"
                 }
             }
         }
         
-        stage('Run Docker Container') {
+        stage('Run Docker Container on EC2') {
             steps {
                 script {
-                    // Run the Docker container on a different external port (e.g., 8081 to avoid conflict with Jenkins)
+                    // Run the Docker container on EC2, mapping external port 8081 to internal port 8080
                     sh "docker run -d -p 8081:8080 --name springboot ${DOCKER_IMAGE}"
                 }
             }
