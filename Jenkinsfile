@@ -23,11 +23,19 @@ pipeline {
             }
         }
 
+        stage('Build Spring Boot Application') {
+            steps {
+                // Build the Spring Boot app using Maven
+                // This step will create the target directory and the JAR file
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
                     // Build Docker image from the Dockerfile
-                    // Update the path if the Dockerfile is in a subdirectory like docker/
+                    // Make sure the path to the Dockerfile is correct
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
