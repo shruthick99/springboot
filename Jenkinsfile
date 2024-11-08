@@ -43,15 +43,14 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 script {
-                    // Use the SSH private key credential to access EC2
                     withCredentials([sshUserPrivateKey(credentialsId: 'pipeline-ssh-key', keyFileVariable: 'SSH_PRIVATE_KEY')]) {
                         sh """
-                            ssh -o StrictHostKeyChecking=no -i \$SSH_PRIVATE_KEY ec2-user@${EC2_PUBLIC_IP} \\
-                            'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} && \\
-                            docker stop spring-boot-app || true && \\
-                            docker rm spring-boot-app || true && \\
-                            docker run -d --name spring-boot-app -p 8081:8081 ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}'
-                        """
+                            ssh -o StrictHostKeyChecking=no -i \$SSH_PRIVATE_KEY ec2-user@${EC2_PUBLIC_IP} ' \
+                            docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} && \
+                            docker ps -q --filter "name=spring-boot-app" | xargs -r docker stop && \
+                            docker ps -a -q --filter "name=spring-boot-app" | xargs -r docker rm && \
+                            docker run -d --name spring-boot-app -p 8081:8081 ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} '
+                        '
                     }
                 }
             }
