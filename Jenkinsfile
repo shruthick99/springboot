@@ -2,58 +2,70 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = 'dockerhub-creds'  // The ID of your Docker Hub credentials in Jenkins
-        IMAGE_NAME = 'shruthick99/springboot'       // Docker image name
-        IMAGE_TAG = 'v1.0.1'                        // The new tag for your image
+        // Docker Image details
+        DOCKER_IMAGE = 'shruthick99/my-spring-boot-app:latest'
+        // EC2 Instance details
+        EC2_INSTANCE = 'ec2-user@3.137.212.65'  // Update with your EC2 public IP
+        EC2_KEY_ID = 'ec2-ssh-key'  // Use the Jenkins credential ID for SSH access
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
-                // Checkout your Git repository
-                checkout scm
+                script {
+                    // Checkout the latest code from the master branch
+                    git branch: 'master', url: 'https://github.com/shruthick99/springboot.git'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image with the new tag
-                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                    // Build the Docker image using the Dockerfile
+                    sh 'docker build -t $DOCKER_IMAGE .'
                 }
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    // Docker login using credentials stored in Jenkins
-                    withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                    // Login to Docker Hub (use your Docker Hub credentials)
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+
+                        // Push the image to Docker Hub
+                        sh 'docker push $DOCKER_IMAGE'
                     }
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Deploy to EC2') {
             steps {
                 script {
-                    // Push the Docker image to Docker Hub
-                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-                }
-            }
-        }
+                    // SSH into EC2 and deploy the Docker container
+                    withCredentials([sshUserPrivateKey(credentialsId: "$EC2_KEY_ID", keyFileVariable: 'SSH_KEY')]) {
+                        sh """
+                            echo "Deploying Docker container to EC2..."
 
-        stage('Deploy on EC2') {
-            steps {
-                script {
-                    // Run Docker commands directly on the EC2 instance (Jenkins is already running on EC2)
-                    sh """
-                    docker pull ${IMAGE_NAME}:${IMAGE_TAG}
-                    docker stop springboot || true
-                    docker rm springboot || true
-                    docker run -d -p 8081:8081 --name springboot ${IMAGE_NAME}:${IMAGE_TAG}
-                    """
+                            # SSH into EC2 and perform the actions
+                            ssh -i \$SSH_KEY $EC2_INSTANCE '
+                                # Pull the latest Docker image
+                                docker pull $DOCKER_IMAGE && \
+
+                                # Stop the existing container (if running)
+                                docker stop my-spring-boot-app || true && \
+
+                                # Remove the old container (if exists)
+                                docker rm my-spring-boot-app || true && \
+
+                                # Run the new Docker container
+                                docker run -d --name my-spring-boot-app -p 8081:8081 $DOCKER_IMAGE
+                            '
+                        """
+                    }
                 }
             }
         }
@@ -61,10 +73,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'Deployment was successful!'
         }
         failure {
-            echo 'Pipeline failed. Please check the logs.'
+            echo 'Deployment failed!'
         }
     }
 }
