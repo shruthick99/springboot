@@ -9,6 +9,6 @@ public class HelloController {  // Class name should match the file name
     // Map to root URL ("/") instead of "/hello"
     @GetMapping("/")
     public String sayHello() {
-        return "Hello, World!";
+        return "Hello, Miracle!";
     }
 }
