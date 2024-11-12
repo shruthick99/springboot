@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'shruthick99/my-spring-boot-app'
         DOCKER_TAG = 'latest'
         DOCKER_REGISTRY = 'docker.io'
-        EC2_PUBLIC_IP = '52.15.191.224'  // Replace with your EC2's public IP
+        EC2_PUBLIC_IP = '18.221.26.183'  // Replace with your EC2's public IP
     }
 
     stages {
