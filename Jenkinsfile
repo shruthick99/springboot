@@ -7,6 +7,7 @@ pipeline {
         DOCKER_REGISTRY = 'docker.io'
         EC2_PUBLIC_IP = '13.58.196.789'  // Replace with your EC2's public IP
         RECIPIENTS = 'shrubuddy99@gmail.com'  // Add your email address here
+        DOCKER_REGISTRY_CREDS = 'docker-hub-creds'  // Docker Hub credentials
     }
 
     stages {
@@ -33,8 +34,8 @@ pipeline {
         stage('Push to Docker Registry') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_REGISTRY_CREDS}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
                     }
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
                 }
@@ -61,9 +62,8 @@ pipeline {
     post {
         success {
             echo "Deployment to EC2 was successful!"
-            
             // Send email on success
-            emailext (
+            emailext(
                 subject: "Deployment Success: ${currentBuild.fullDisplayName}",
                 body: "The deployment of ${currentBuild.fullDisplayName} to EC2 was successful.",
                 to: "${env.RECIPIENTS}"
@@ -71,9 +71,8 @@ pipeline {
         }
         failure {
             echo "Deployment to EC2 failed."
-            
             // Send email on failure
-            emailext (
+            emailext(
                 subject: "Deployment Failed: ${currentBuild.fullDisplayName}",
                 body: "The deployment of ${currentBuild.fullDisplayName} to EC2 failed. Please check the logs for details.",
                 to: "${env.RECIPIENTS}"
@@ -81,7 +80,7 @@ pipeline {
         }
         always {
             // Optionally, you can add a notification for every build (success or failure)
-            emailext (
+            emailext(
                 subject: "Build Summary: ${currentBuild.currentResult} ${currentBuild.fullDisplayName}",
                 body: "The build ${currentBuild.fullDisplayName} finished with status ${currentBuild.currentResult}.",
                 to: "${env.RECIPIENTS}"
