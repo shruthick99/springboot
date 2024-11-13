@@ -5,7 +5,8 @@ pipeline {
         DOCKER_IMAGE = 'shruthick99/my-spring-boot-app'
         DOCKER_TAG = 'latest'
         DOCKER_REGISTRY = 'docker.io'
-        EC2_PUBLIC_IP = '18.221.26.183'  // Replace with your EC2's public IP
+        EC2_PUBLIC_IP = '18.116.30.48'  // Replace with your EC2's public IP
+        RECIPIENTS = 'shrubuddy99@gmail.com'  // Add your email address here
     }
 
     stages {
@@ -54,6 +55,40 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment to EC2 was successful!"
+            
+            // Send email on success
+            emailext (
+                subject: "Deployment Success: ${currentBuild.fullDisplayName}",
+                body: "The deployment of ${currentBuild.fullDisplayName} to EC2 was successful.",
+                to: "${env.RECIPIENTS}",
+                charset: 'UTF-8'
+            )
+        }
+        failure {
+            echo "Deployment to EC2 failed."
+            
+            // Send email on failure
+            emailext (
+                subject: "Deployment Failed: ${currentBuild.fullDisplayName}",
+                body: "The deployment of ${currentBuild.fullDisplayName} to EC2 failed. Please check the logs for details.",
+                to: "${env.RECIPIENTS}",
+                charset: 'UTF-8'
+            )
+        }
+        always {
+            // Optionally, you can add a notification for every build (success or failure)
+            emailext (
+                subject: "Build Summary: ${currentBuild.currentResult} ${currentBuild.fullDisplayName}",
+                body: "The build ${currentBuild.fullDisplayName} finished with status ${currentBuild.currentResult}.",
+                to: "${env.RECIPIENTS}",
+                charset: 'UTF-8'
+            )
         }
     }
 }
