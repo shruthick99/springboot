@@ -66,8 +66,7 @@ pipeline {
             emailext (
                 subject: "Deployment Success: ${currentBuild.fullDisplayName}",
                 body: "The deployment of ${currentBuild.fullDisplayName} to EC2 was successful.",
-                to: "${env.RECIPIENTS}",
-                charset: 'UTF-8'
+                to: "${env.RECIPIENTS}"
             )
         }
         failure {
@@ -77,8 +76,7 @@ pipeline {
             emailext (
                 subject: "Deployment Failed: ${currentBuild.fullDisplayName}",
                 body: "The deployment of ${currentBuild.fullDisplayName} to EC2 failed. Please check the logs for details.",
-                to: "${env.RECIPIENTS}",
-                charset: 'UTF-8'
+                to: "${env.RECIPIENTS}"
             )
         }
         always {
@@ -86,8 +84,7 @@ pipeline {
             emailext (
                 subject: "Build Summary: ${currentBuild.currentResult} ${currentBuild.fullDisplayName}",
                 body: "The build ${currentBuild.fullDisplayName} finished with status ${currentBuild.currentResult}.",
-                to: "${env.RECIPIENTS}",
-                charset: 'UTF-8'
+                to: "${env.RECIPIENTS}"
             )
         }
     }
