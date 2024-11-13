@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'shruthick99/my-spring-boot-app'
         DOCKER_TAG = 'latest'
         DOCKER_REGISTRY = 'docker.io'
-        EC2_PUBLIC_IP = '13.58.196.'  // Replace with your EC2's public IP
+        EC2_PUBLIC_IP = '13.58.196.789'  // Replace with your EC2's public IP
         RECIPIENTS = 'shrubuddy99@gmail.com'  // Add your email address here
     }
 
