@@ -5,9 +5,10 @@ pipeline {
         DOCKER_IMAGE = 'shruthick99/my-spring-boot-app'
         DOCKER_TAG = 'latest'
         DOCKER_REGISTRY = 'docker.io'
-        EC2_PUBLIC_IP = '18.191.211.155'  // Replace with your EC2's public IP
-        RECIPIENTS = 'shrubuddy99@gmail.com'  // Add your email address here
+        EC2_PUBLIC_IP = '13.58.196.90'  // Replace with your EC2's public IP
+        RECIPIENTS = 'shrubuddy99@gmail.com'
         DOCKER_REGISTRY_CREDS = 'docker-hub-creds'  // Docker Hub credentials
+        PROMETHEUS_CONFIG = '/home/ec2-user/prometheus.yml'  // Path to Prometheus config on EC2
     }
 
     stages {
@@ -42,7 +43,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy Spring Boot App to EC2') {
             steps {
                 script {
                     withCredentials([sshUserPrivateKey(credentialsId: 'pipeline-ssh-key', keyFileVariable: 'SSH_PRIVATE_KEY')]) {
@@ -51,7 +52,34 @@ pipeline {
                             docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} && \
                             docker ps -q --filter "name=spring-boot-app" | xargs -r docker stop && \
                             docker ps -a -q --filter "name=spring-boot-app" | xargs -r docker rm && \
-                            docker run -d --name spring-boot-app -p 8081:8081 ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} '
+                            docker run -d --name spring-boot-app -p 8080:8080 ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} '
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Prometheus') {
+            steps {
+                script {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'pipeline-ssh-key', keyFileVariable: 'SSH_PRIVATE_KEY')]) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -i \$SSH_PRIVATE_KEY ec2-user@${EC2_PUBLIC_IP} ' \
+                            docker run -d --name prometheus -p 9090:9090 \
+                            -v ${PROMETHEUS_CONFIG}:/etc/prometheus/prometheus.yml prom/prometheus:latest '
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Grafana') {
+            steps {
+                script {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'pipeline-ssh-key', keyFileVariable: 'SSH_PRIVATE_KEY')]) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -i \$SSH_PRIVATE_KEY ec2-user@${EC2_PUBLIC_IP} ' \
+                            docker run -d --name grafana -p 3000:3000 grafana/grafana:latest '
                         """
                     }
                 }
@@ -62,7 +90,6 @@ pipeline {
     post {
         success {
             echo "Deployment to EC2 was successful!"
-            // Send email on success
             emailext(
                 subject: "Deployment Success: ${currentBuild.fullDisplayName}",
                 body: "The deployment of ${currentBuild.fullDisplayName} to EC2 was successful.",
@@ -71,18 +98,9 @@ pipeline {
         }
         failure {
             echo "Deployment to EC2 failed."
-            // Send email on failure
             emailext(
                 subject: "Deployment Failed: ${currentBuild.fullDisplayName}",
                 body: "The deployment of ${currentBuild.fullDisplayName} to EC2 failed. Please check the logs for details.",
-                to: "${env.RECIPIENTS}"
-            )
-        }
-        always {
-            // Optionally, you can add a notification for every build (success or failure)
-            emailext(
-                subject: "Build Summary: ${currentBuild.currentResult} ${currentBuild.fullDisplayName}",
-                body: "The build ${currentBuild.fullDisplayName} finished with status ${currentBuild.currentResult}.",
                 to: "${env.RECIPIENTS}"
             )
         }
